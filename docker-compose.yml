@@ -1,0 +1,47 @@
+version: "3"
+
+services:
+  pgdb:
+    image: postgres
+    container_name: pg-db
+    volumes:
+      - /tmp/pgdata:/var/lib/postgresql/data
+      - ./dump.sql:/docker-entrypoint-initdb.d/dump.sql
+    expose:
+      - "5432"
+    environment:
+      - POSTGRES_PASSWORD=dockpgr
+
+  api:
+    image: alpine
+    container_name: app-api
+    volumes:
+      - ./bin:/app
+      - ./log:/app/log
+    links:
+      - pgdb
+    environment:
+      LOG_FILE_LOCATION: "/app/log/app.log"
+      DBhost: pgdb
+      DBname: "postgres"
+      DBuser: "postgres"
+      DBpwd: "dockpgr"
+      DBport: "5432"
+    depends_on:
+      - pgdb
+    # override image entrypoint
+    entrypoint: /app/apibin
+    ports:
+      - "3001:3001"
+    # allow to attach terminal
+    stdin_open: true
+    # set cpu and memory limit (only for swarm mode)
+    #   for non-swarm mode use 2.x compose file
+    deploy:
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 50M
+      
+    
+# https://docs.docker.com/v17.09/compose/compose-file
